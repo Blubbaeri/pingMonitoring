@@ -34,7 +34,7 @@
             </div>
             <div class="target-badge">
                 <span id="status-dot" class="pulse-indicator online"></span>
-                <span>Monitoring Device Connection</span>
+                <span id="current-host-badge">Monitoring Device Connection</span>
             </div>
         </header>
 
@@ -53,6 +53,13 @@
                 <i data-lucide="moon" style="width: 18px; height: 18px;"></i>
             </button>
         </div>
+
+        <!-- Custom Target Form -->
+        <form id="host-form" class="host-selector-form">
+            <input type="text" id="host-input" class="host-input" placeholder="Enter target (e.g. google.com or aternos.me:64032)" required>
+            <button type="submit" class="host-btn">Monitor</button>
+        </form>
+        <div id="host-error" class="warning-banner" style="display: none; padding: 0.75rem 1rem; margin-top: -1rem; margin-bottom: 2rem; font-size: 0.85rem;"></div>
 
         <!-- Quick Stats Grid -->
         <div class="stats-grid">

@@ -9,7 +9,8 @@ document.addEventListener('DOMContentLoaded', () => {
     let lastLogTime = null;
     let lastStatsUpdateTime = 0;
 
-    const TEST_URL = 'https://connectivitycheck.gstatic.com/generate_204';
+    let currentTarget = 'connectivitycheck.gstatic.com';
+    let TEST_URL = 'https://connectivitycheck.gstatic.com/generate_204';
 
     // Elements
     const statusText = document.getElementById('status-value');
@@ -31,6 +32,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const statMax = document.getElementById('stat-max');
     const lastUpdateTime = document.getElementById('last-update-time');
     const themeToggle = document.getElementById('theme-toggle');
+    
+    const hostInput = document.getElementById('host-input');
+    const hostForm = document.getElementById('host-form');
+    const hostError = document.getElementById('host-error');
+    const currentHostBadge = document.getElementById('current-host-badge');
 
     // Theme toggle logic initialization
     const savedTheme = localStorage.getItem('theme') || 'dark';
@@ -197,15 +203,19 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
         
-        // Update stats (real-time recalculation)
-        const minVal = Math.min(...activeData);
-        const maxVal = Math.max(...activeData);
-        const sumVal = activeData.reduce((acc, curr) => acc + curr, 0);
-        const avgVal = Math.round(sumVal / activeData.length);
-        
-        statMin.textContent = `${minVal} ms`;
-        statAvg.textContent = `${avgVal} ms`;
-        statMax.textContent = `${maxVal} ms`;
+        // Update stats (recalculation throttled to 5 minutes)
+        const now = Date.now();
+        if (force || lastStatsUpdateTime === 0 || (now - lastStatsUpdateTime) >= 300000) {
+            lastStatsUpdateTime = now;
+            const minVal = Math.min(...activeData);
+            const maxVal = Math.max(...activeData);
+            const sumVal = activeData.reduce((acc, curr) => acc + curr, 0);
+            const avgVal = Math.round(sumVal / activeData.length);
+            
+            statMin.textContent = `${minVal} ms`;
+            statAvg.textContent = `${avgVal} ms`;
+            statMax.textContent = `${maxVal} ms`;
+        }
 
         // Calculate Jitter (average difference between consecutive delays)
         let totalDiff = 0;
@@ -277,13 +287,15 @@ document.addEventListener('DOMContentLoaded', () => {
         updateSummaryStats(false);
     }
 
-    // Measure latency client-side using gstatic generate_204 endpoint
+    // Measure latency client-side using gstatic generate_204 endpoint or custom host
     async function measureLatency() {
         const start = performance.now();
         try {
-            await fetch(TEST_URL + '?t=' + Date.now(), {
+            const fetchUrl = TEST_URL.includes('?') ? TEST_URL + '&t=' + Date.now() : TEST_URL + '?t=' + Date.now();
+            await fetch(fetchUrl, {
                 mode: 'no-cors',
-                cache: 'no-store'
+                cache: 'no-store',
+                signal: AbortSignal.timeout(3000)
             });
             return Math.round(performance.now() - start);
         } catch (error) {
@@ -370,6 +382,50 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         startPolling();
+    }
+
+    // Handle Custom Host Form submit
+    if (hostForm) {
+        hostForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const inputVal = hostInput.value.trim();
+            if (inputVal) {
+                // Strict regex for domain/IP with optional port
+                const isValid = /^(?:[a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}(?::\d{1,5})?$|^(?:[0-9]{1,3}\.){3}[0-9]{1,3}(?::\d{1,5})?$/.test(inputVal);
+                
+                if (!isValid && inputVal !== 'connectivitycheck.gstatic.com') {
+                    hostError.textContent = 'Invalid target format. Use hostname or IP with optional port (e.g. google.com or aternos.me:64032).';
+                    hostError.style.display = 'block';
+                    return;
+                }
+                
+                hostError.style.display = 'none';
+                currentTarget = inputVal;
+                if (currentHostBadge) currentHostBadge.textContent = currentTarget;
+                
+                // Adjust TEST_URL logic
+                if (currentTarget === 'connectivitycheck.gstatic.com' || currentTarget === 'connectivitycheck.gstatic.com/generate_204') {
+                    TEST_URL = 'https://connectivitycheck.gstatic.com/generate_204';
+                } else {
+                    const protocol = currentTarget.includes(':') ? 'http://' : 'https://';
+                    TEST_URL = protocol + currentTarget;
+                }
+                
+                lastPing = null;
+                lastStatsUpdateTime = 0; // Force recalculation on host shift
+                
+                // Clear current chart data
+                if (pingChart) {
+                    pingChart.data.labels = [];
+                    pingChart.data.datasets[0].data = [];
+                    pingChart.update();
+                }
+                tableBody.innerHTML = '';
+                
+                // Reset polling
+                startPolling();
+            }
+        });
     }
 
     initDashboard();
