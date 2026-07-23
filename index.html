@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Connection Quality Monitor</title>
+    <!-- Custom SVG Favicon -->
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%233b82f6' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M2 12h4l3-9 5 18 3-9h5'/></svg>" />
     <link rel="stylesheet" href="assets/css/style.css">
     <!-- Chart.js and Lucide Icons -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -28,9 +30,14 @@
     <div class="dashboard-container">
         <!-- Header -->
         <header>
-            <div class="header-title">
-                <h1>Current Network</h1>
-                <p>Live device latency & connection quality monitoring</p>
+            <div class="header-title" style="display: flex; align-items: center; gap: 15px;">
+                <div style="background: linear-gradient(135deg, #3b82f6, #8b5cf6); padding: 12px; border-radius: 12px; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 15px rgba(59, 130, 246, 0.4);">
+                    <i data-lucide="activity" style="color: white; width: 28px; height: 28px;"></i>
+                </div>
+                <div>
+                    <h1 style="margin: 0;">Current Network</h1>
+                    <p style="margin: 4px 0 0 0;">Live device latency & connection quality monitoring</p>
+                </div>
             </div>
             <div class="target-badge">
                 <span id="status-dot" class="pulse-indicator online"></span>
